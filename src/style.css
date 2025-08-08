@@ -1,28 +1,49 @@
 :root{
-  --bg:#f7fbff; --panel:#ffffff; --text:#0f172a; --muted:#5b6b86;
-  --border:#d7e6ff; --primary:#3b82f6; --primary-weak:#e7f0ff;
+  --bg:#f6faff; --panel:#ffffff; --text:#0f172a; --muted:#5b6b86;
+  --border:#d7e6ff; --primary:#2563eb; --primary-weak:#e8f0ff;
+  --ok:#16a34a; --warn:#d97706; --bad:#dc2626; --shadow:0 10px 30px rgba(37,99,235,.10);
+  --cat-İmmünoloji:#0ea5e9; --cat-Nöroloji:#818cf8; --cat-Pediatri:#10b981; --cat-Genel\ Cerrahi:#f59e0b;
+  --cat-Göğüs\ Hastalıkları:#f472b6; --cat-Kardiyoloji/Yoğun\ Bakım:#ef4444; --cat-Endokrinoloji:#22d3ee;
+  --cat-Nefroloji:#06b6d4; --cat-Hematoloji:#84cc16; --cat-Onkoloji:#fb7185; --cat-Enfeksiyon:#a78bfa;
+  --cat-Gastro:#f97316; --cat-Psikiyatri:#14b8a6; --cat-Radyoloji:#60a5fa; --cat-Kadın-Doğum:#e879f9; --cat-Fizyoloji:#34d399;
 }
 *{box-sizing:border-box} html,body,#root{height:100%}
-body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-.header{position:sticky;top:0;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);z-index:10}
+body{
+  margin:0; color:var(--text);
+  font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% -20%, rgba(37,99,235,.10), transparent 55%),
+    radial-gradient(ellipse at 120% 0%, rgba(59,130,246,.10), transparent 40%);
+}
+.header{position:sticky;top:0;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);z-index:20}
 .container{max-width:1100px;margin:0 auto;padding:16px}
-.hstack{display:flex;align-items:center;gap:8px}.spacer{flex:1}
-.btn{border:1px solid var(--border);background:var(--panel);padding:8px 12px;border-radius:12px;cursor:pointer}
-.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
-.btn.ghost{background:transparent}
-.input, select{padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;width:100%}
-.grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:12px}
-@media(min-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:0 4px 14px rgba(59,130,246,.06)}
-.card .cat{font-size:12px;color:var(--muted);margin-bottom:4px}
-.card .q{font-size:14px;line-height:1.5;margin-bottom:8px}
-.card .a{font-size:13px;background:var(--primary-weak);padding:8px;border-radius:10px;border:1px dashed var(--border)}
-.toolbar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:12px}
-@media(max-width:720px){.toolbar{grid-template-columns:1fr}}
-.kpi{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0 16px 0}
-.kpi .pill{background:var(--primary-weak);padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px}
-.footer{color:var(--muted);font-size:12px;padding:24px 0}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{width:38px;height:38px;border-radius:12px;background:#e6f1ff;display:grid;place-items:center;border:1px solid var(--border);box-shadow:var(--shadow);font-family:Poppins, sans-serif;color:#1e3a8a}
+.title{font-family:Manrope, Inter, sans-serif;font-weight:800;font-size:22px;letter-spacing:.2px}
+.sub{font-size:12px;color:var(--muted)}
 .badge{background:#e6f1ff;color:#1e3a8a;border-radius:999px;font-size:12px;padding:4px 8px;margin-left:8px}
-.small{font-size:12px;color:var(--muted)} hr.sep{border:none;border-top:1px dashed var(--border);margin:12px 0}
-.quiz{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
-.options{display:flex;gap:8px;flex-wrap:wrap} .options .btn{min-width:88px} .due{background:#fff7ed;border:1px solid #fed7aa}
+.hstack{display:flex;align-items:center;gap:8px}.spacer{flex:1}
+.btn{border:1px solid var(--border);background:var(--panel);padding:8px 12px;border-radius:12px;cursor:pointer;box-shadow:var(--shadow)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.ghost{background:transparent;box-shadow:none}
+.input, select{padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;width:100%}
+.toolbar{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin:12px 0}
+@media(max-width:800px){.toolbar{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:14px}
+@media(min-width:980px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card .tag{font-size:12px;color:#0f172a;opacity:.9;margin-bottom:6px;font-weight:600}
+.card .q{font-size:15px;line-height:1.55;margin-bottom:8px;font-weight:600}
+.card .a{font-size:13px;background:var(--primary-weak);padding:10px;border-radius:10px;border:1px dashed var(--border)}
+.card .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px}
+.footer{color:var(--muted);font-size:12px;padding:24px 0}
+.kpi{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.kpi .pill{background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);padding:6px 10px;border-radius:999px;font-size:12px}
+.progress{height:8px;background:#eaf2ff;border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.progress > div{height:100%;background:linear-gradient(90deg,#60a5fa,#2563eb)}
+.quiz{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.options{display:flex;gap:8px;flex-wrap:wrap}.options .btn{min-width:88px}
+.due{background:#fff7ed;border:1px solid #fed7aa}
+.switch{display:flex;align-items:center;gap:8px;font-size:12px}
+.small{font-size:12px;color:var(--muted)}

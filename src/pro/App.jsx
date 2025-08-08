@@ -1,32 +1,55 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { QA as SEED } from '../data'
 
-const BOX_INTERVALS = [0, 1, 2, 4, 7, 15]
-const KEY = 'tus-pro-state-v1'
+const BOX_INTERVALS = [0,1,2,4,7,15]
+const KEY='tus-proplus-state-v1'
 const todayISO = () => new Date().toISOString().slice(0,10)
-const addDays = (iso, n) => { const d=new Date(iso); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10) }
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {} } catch { return {} } }
-const save = (s) => localStorage.setItem(KEY, JSON.stringify(s))
+const addDays = (iso, n)=>{const d=new Date(iso); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10)}
+const load = ()=>{ try{return JSON.parse(localStorage.getItem(KEY))||{}}catch{return{}} }
+const save = (s)=>localStorage.setItem(KEY, JSON.stringify(s))
+
+const CAT_ICON = {
+  'İmmünoloji':'🧪','Nöroloji':'🧠','Pediatri':'👶','Genel Cerrahi':'🩺','Göğüs Hastalıkları':'🫁',
+  'Kardiyoloji/Yoğun Bakım':'❤️','Endokrinoloji':'🧬','Nefroloji':'🫘','Hematoloji':'🩸',
+  'Onkoloji':'🎗️','Enfeksiyon':'🦠','Gastro':'🫗','Psikiyatri':'🧩','Radyoloji':'🩻','Kadın-Doğum':'🤰','Fizyoloji':'📈'
+}
 
 function useCards(){
-  const [cards, setCards] = useState(() => {
+  const [cards, setCards] = useState(()=>{
     const st = load()
-    return st.cards || SEED.map(c => ({...c, box:1, due: todayISO(), history: []}))
+    return st.cards || SEED.map(c=>({...c, box:1, due:todayISO(), history:[]}))
   })
   useEffect(()=>save({cards}),[cards])
   return [cards, setCards]
 }
 
-function Header({onExport,onImport,onReset}){
+function BrandBar({progress, todayCount, onExport, onImport, onReset, mode, setMode}){
   return (
     <div className="header">
-      <div className="container hstack">
-        <div className="title" style={{fontWeight:800,fontSize:22}}>TUS Soru Arşivi • Pro</div>
-        <span className="badge">Serhat</span>
-        <div className="spacer" />
-        <button className="btn" onClick={onExport}>Dışa Aktar</button>
-        <label className="btn">İçe Aktar<input type="file" accept="application/json" style={{display:'none'}} onChange={onImport}/></label>
-        <button className="btn ghost" onClick={onReset}>Sıfırla</button>
+      <div className="container">
+        <div className="hstack">
+          <div className="brand">
+            <div className="logo">TUS</div>
+            <div>
+              <div className="title" style={{fontFamily:'Manrope,Inter'}}>Soru Arşivi • Pro+</div>
+              <div className="sub">Bugün {todayCount} kart • Hedef: ustala</div>
+            </div>
+            <span className="badge">Serhat</span>
+          </div>
+          <div className="spacer" />
+          <button className="btn" onClick={onExport}>Yedek (.json)</button>
+          <label className="btn">İçe Aktar
+            <input type="file" accept="application/json" style={{display:'none'}} onChange={onImport}/>
+          </label>
+          <button className="btn ghost" onClick={onReset}>Sıfırla</button>
+          <button className="btn" onClick={()=>setMode(mode==='minimal'?'detailed':'minimal')}>{mode==='minimal'?'Detaylı':'Minimal'}</button>
+        </div>
+        <div className="kpi">
+          <div className="pill" title="İlerleme">
+            Günlük ilerleme
+            <div className="progress" style={{width:220, marginTop:6}}><div style={{width:`${Math.round(progress*100)}%`}}/></div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -34,15 +57,27 @@ function Header({onExport,onImport,onReset}){
 
 export default function App(){
   const [cards, setCards] = useCards()
-  const [tab, setTab] = useState('browse')
+  const [tab, setTab] = useState('study') // default study mode
   const [q, setQ] = useState('')
   const [cat, setCat] = useState('Hepsi')
+  const [mode, setMode] = useState('minimal')
+  const [onlyDue, setOnlyDue] = useState(false)
+
   const cats = useMemo(()=>['Hepsi', ...Array.from(new Set(cards.map(c=>c.cat))).sort((a,b)=>a.localeCompare(b,'tr'))],[cards])
+  const todayDue = useMemo(()=>cards.filter(c=>c.due<=todayISO()),[cards])
+  const totalDue = todayDue.length
+
   const filtered = useMemo(()=>{
     const s=q.trim().toLowerCase()
-    return cards.filter(x => (cat==='Hepsi'||x.cat===cat) && (!s || x.q.toLowerCase().includes(s) || (x.a||'').toLowerCase().includes(s)))
-  },[cards,q,cat])
-  const dueToday = useMemo(()=>cards.filter(c=>c.due<=todayISO()),[cards])
+    return cards
+      .filter(x => (cat==='Hepsi'||x.cat===cat))
+      .filter(x => (!onlyDue || x.due<=todayISO()))
+      .filter(x => (!s || x.q.toLowerCase().includes(s) || (x.a||'').toLowerCase().includes(s)))
+  },[cards, q, cat, onlyDue])
+
+  // Progress: approximate = studied today / total due
+  const studiedToday = useMemo(()=> cards.reduce((acc,c)=>acc + (c.history?.some(h=>h.date===todayISO())?1:0),0),[cards])
+  const progress = totalDue ? Math.min(1, studiedToday/totalDue) : 1
 
   function grade(card, tag){
     const delta = tag==='again'?-1:tag==='hard'?0:tag==='good'?1:2
@@ -53,7 +88,7 @@ export default function App(){
 
   function exportJSON(){
     const blob = new Blob([JSON.stringify({cards},null,2)],{type:'application/json'})
-    const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='tus-pro.json'; a.click(); URL.revokeObjectURL(url)
+    const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='tus-proplus.json'; a.click(); URL.revokeObjectURL(url)
   }
   function importJSON(e){
     const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{const o=JSON.parse(r.result); if(o.cards) setCards(o.cards); else if(Array.isArray(o)) setCards(o); else alert('Geçersiz JSON');}catch{alert('JSON okunamadı')}}; r.readAsText(f)
@@ -62,43 +97,65 @@ export default function App(){
 
   return (
     <div>
-      <Header onExport={exportJSON} onImport={importJSON} onReset={resetAll} />
-      <div className="container">
-        <div className="kpi">
-          <div className="pill">Toplam: {cards.length}</div>
-          <div className="pill">Bugün tekrar: {dueToday.length}</div>
-        </div>
+      <BrandBar
+        progress={progress}
+        todayCount={totalDue}
+        onExport={exportJSON}
+        onImport={importJSON}
+        onReset={resetAll}
+        mode={mode}
+        setMode={setMode}
+      />
+
+      <div className="container" style={{paddingTop:12}}>
         <div className="hstack" style={{gap:8,marginBottom:12}}>
+          <button className={`btn ${tab==='study'?'primary':''}`} onClick={()=>setTab('study')}>Çalış</button>
           <button className={`btn ${tab==='browse'?'primary':''}`} onClick={()=>setTab('browse')}>Liste</button>
-          <button className={`btn ${tab==='study'?'primary':''}`} onClick={()=>setTab('study')}>Çalış (Aralıklı Tekrar)</button>
+          <div className="spacer"></div>
+          <div className="switch">
+            <input id="dueSwitch" type="checkbox" checked={onlyDue} onChange={e=>setOnlyDue(e.target.checked)} />
+            <label htmlFor="dueSwitch">Sadece bugün due</label>
+          </div>
         </div>
 
-        {tab==='browse' ? (
+        {tab==='study' ? (
+          <Study cards={cards} onGrade={grade} />
+        ) : (
           <>
             <div className="toolbar">
-              <input className="input" placeholder="Ara (soru veya cevap)" value={q} onChange={e=>setQ(e.target.value)} />
+              <input className="input" placeholder="Ara (soru/cevap)" value={q} onChange={e=>setQ(e.target.value)} />
               <select value={cat} onChange={e=>setCat(e.target.value)}>{cats.map(c=><option key={c} value={c}>{c}</option>)}</select>
+              <select value={mode} onChange={e=>setMode(e.target.value)}>
+                <option value="minimal">Minimal</option>
+                <option value="detailed">Detaylı</option>
+              </select>
               <div></div>
             </div>
             <div className="grid">
-              {filtered.map(item=> (
-                <div key={item.id} className="card">
-                  <div className="cat">{item.cat} • Kutu {item.box} • {item.due<=todayISO()?'Bugün due':`Sonraki: ${item.due}`}</div>
-                  <div className="q">{item.q}</div>
-                  <div className="a">{item.a}</div>
-                  <div className="hstack" style={{justifyContent:'flex-end',marginTop:8}}>
-                    <button className="btn" onClick={()=>navigator.clipboard.writeText(item.q+' — '+item.a)}>Kopyala</button>
-                    <button className="btn" onClick={()=>alert(item.history.map(h=>`${h.date}: ${h.grade}`).join('\n')||'Geçmiş yok')}>Geçmiş</button>
-                  </div>
-                </div>
+              {filtered.map(item => (
+                <Card key={item.id} item={item} mode={mode} />
               ))}
             </div>
           </>
-        ) : (
-          <Study cards={cards} onGrade={grade} />
         )}
 
-        <div className="footer">Açık mavi, kompakt UI • Aralıklı tekrar + aktif hatırlama • Veriler tarayıcıda saklanır.</div>
+        <div className="footer">Pro+ görünüm • Poppins/Manrope tipografi • Kısayollar: Space, 1-4 • JSON yedek • LocalStorage</div>
+      </div>
+    </div>
+  )
+}
+
+function Card({item, mode}){
+  const color = `var(--cat-${(item.cat||'').replaceAll(' ','\\ ').replaceAll('/','\\/')})`
+  const icon = CAT_ICON[item.cat] || '📌'
+  return (
+    <div className="card" style={{borderColor:color}}>
+      <div className="tag" style={{color}}>{icon} {item.cat} • Kutu {item.box} • {item.due}</div>
+      <div className="q" style={{fontFamily:'Manrope,Inter'}}>{item.q}</div>
+      {mode==='detailed' && <div className="a">{item.a}</div>}
+      <div className="hstack" style={{justifyContent:'space-between',marginTop:8}}>
+        <span className="small">ID: {item.id}</span>
+        <span className="chip" title="kopyala" onClick={()=>navigator.clipboard.writeText(item.q+' — '+item.a)}>Kopyala</span>
       </div>
     </div>
   )
@@ -108,20 +165,47 @@ function Study({cards,onGrade}){
   const due = useMemo(()=>cards.filter(c=>c.due<=todayISO()).sort((a,b)=>a.due.localeCompare(b.due)),[cards])
   const [i,setI]=useState(0); const [show,setShow]=useState(false)
   useEffect(()=>setShow(false),[i])
-  if(due.length===0){ return <div className="quiz due"><b>Bugün tekrar yok.</b><div className="small">Liste sekmesinden çalışabilir veya yarına bekleyebilirsin.</div></div> }
+
+  // Keyboard shortcuts
+  useEffect(()=>{
+    function onKey(e){
+      if(e.code==='Space'){ e.preventDefault(); setShow(s=>!s); }
+      if(['Digit1','Digit2','Digit3','Digit4'].includes(e.code)){
+        const map={Digit1:'again',Digit2:'hard',Digit3:'good',Digit4:'easy'}
+        const tag = map[e.code]; if(due.length>0){ onGrade(due[i % due.length], tag); setI(v=>v+1); setShow(false) }
+      }
+    }
+    window.addEventListener('keydown', onKey); return ()=>window.removeEventListener('keydown', onKey)
+  },[i,due,onGrade])
+
+  if(due.length===0){
+    return <div className="quiz due"><b>Bugün tekrar yok.</b><div className="small">Liste sekmesinden çalışabilir veya yarına bekleyebilirsin.</div></div>
+  }
   const card = due[i % due.length]
+  const total = due.length
+  const current = (i % due.length) + 1
+  const pct = Math.round((current-1)/total*100)
+
   return (
     <div className="quiz">
-      <div className="small">Due: {due.length} kart</div>
-      <h3 style={{margin:'6px 0 8px 0'}}>{card.cat}</h3>
-      <div className="q" style={{fontSize:16,fontWeight:600}}>{card.q}</div>
-      {!show ? <button className="btn primary" style={{marginTop:10}} onClick={()=>setShow(true)}>Cevabı Göster</button> : <div className="a" style={{marginTop:8}}>{card.a}</div>}
+      <div className="hstack" style={{justifyContent:'space-between',marginBottom:8}}>
+        <div className="small">Due: {total} kart</div>
+        <div className="small">Kısayollar: Space, 1-4</div>
+      </div>
+      <div className="progress" style={{marginBottom:10}}><div style={{width:`${pct}%`}}/></div>
+      <h3 style={{margin:'6px 0 8px 0', fontFamily:'Manrope,Inter'}}>{card.cat}</h3>
+      <div className="q" style={{fontSize:18,fontWeight:800,fontFamily:'Manrope,Inter'}}>{card.q}</div>
+      {!show ? (
+        <button className="btn primary" style={{marginTop:10}} onClick={()=>setShow(true)}>Cevabı Göster</button>
+      ) : (
+        <div className="a" style={{marginTop:8}}>{card.a}</div>
+      )}
       <hr className="sep" />
       <div className="options">
-        <button className="btn" onClick={()=>{onGrade(card,'again'); setI(i+1)}}>Tekrar</button>
-        <button className="btn" onClick={()=>{onGrade(card,'hard'); setI(i+1)}}>Zor</button>
-        <button className="btn" onClick={()=>{onGrade(card,'good'); setI(i+1)}}>İyi</button>
-        <button className="btn" onClick={()=>{onGrade(card,'easy'); setI(i+1)}}>Kolay</button>
+        <button className="btn" onClick={()=>{onGrade(card,'again'); setI(i+1)}}>1 • Tekrar</button>
+        <button className="btn" onClick={()=>{onGrade(card,'hard'); setI(i+1)}}>2 • Zor</button>
+        <button className="btn" onClick={()=>{onGrade(card,'good'); setI(i+1)}}>3 • İyi</button>
+        <button className="btn" onClick={()=>{onGrade(card,'easy'); setI(i+1)}}>4 • Kolay</button>
       </div>
     </div>
   )
